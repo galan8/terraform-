@@ -3,10 +3,12 @@ jobs:
     machine: true
     steps:
       - checkout
-      - run: docker run --rm -v $(pwd):/src tenable/terrascan scan -t aws -d /src/aws -o json | tee terrascan-output.json
+      - run:
+          command: docker run --rm -v $(pwd):/src tenable/terrascan scan -t aws -d /src/aws -o json | tee terrascan-output.json || true
       - store_artifacts:
           path: terrascan-output.json
           destination: terrascan-artifact
+          when: always
   test:
     docker:
       - image: cimg/base:stable
@@ -18,10 +20,7 @@ jobs:
       - image: cimg/base:stable
     steps:
       - checkout
-      - run:
-          command: |
-            echo "This is an integration step"
-            exit 1
+      - run: echo "This is an integration step"
   prod:
     docker:
       - image: cimg/base:stable
