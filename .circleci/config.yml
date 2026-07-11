@@ -1,18 +1,18 @@
 jobs:
-  build:
-    docker:
-      - image: cimg/base:stable                   # similar to "image" in GitLab
+  terrascan:
+    machine: true
     steps:
       - checkout
-      - run: echo "This is a build step"          # similar to "script" in GitLab
-
+      - run: docker run --rm -v $(pwd):/src tenable/terrascan scan -t aws -d /src/aws -o json | tee terrascan-output.json
+      - store_artifacts:
+          path: terrascan-output.json
+          destination: terrascan-artifact
   test:
     docker:
       - image: cimg/base:stable
     steps:
       - checkout
       - run: echo "This is a test step"
-
   integration:
     docker:
       - image: cimg/base:stable
@@ -22,20 +22,24 @@ jobs:
           command: |
             echo "This is an integration step"
             exit 1
-
   prod:
     docker:
       - image: cimg/base:stable
     steps:
       - checkout
       - run: echo "This is a deploy step"
-
 workflows:
   version: 2
-  django:
+  terraform:
     jobs:
-      - build
-      - test
-      - integration
+      - terrascan
+      - test:
+          requires:
+            - terrascan
+      - integration:
+          requires:
+            - test
       - prod:
           type: approval
+          requires:
+            - integration
